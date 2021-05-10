@@ -18,7 +18,7 @@ struct LINE {
 };
 std::deque<LINE> data;
 
-#define LO -2
+#define LO -4
 #define HI +4
 #define WAVFILE_SAMPLES_PER_SECOND 44100
 const int NUM_SAMPLES = WAVFILE_SAMPLES_PER_SECOND*2;
@@ -199,12 +199,12 @@ void samples_draw(wxDC& pdc, wxWindow *canvas, wxFrame *frame )
     for( int i = 0; i < 100; i++ )
     {
         int x2 = x1+10;
-        int y1 = waveform[i];
+        double y1 = waveform[i];
         if( y1 > HI )
             y1 = HI;
         else if( y1 < LO )
             y1 = LO;
-        int y2 = waveform[i+1];
+        double y2 = waveform[i+1];
         if( y2 > HI )
             y2 = HI;
         else if( y2 < LO )
