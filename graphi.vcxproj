@@ -130,11 +130,13 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\console.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\scaler.cpp" />
     <ClCompile Include="src\uart.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\console.h" />
     <ClInclude Include="src\scaler.h" />
     <ClInclude Include="src\uart.h" />
   </ItemGroup>
