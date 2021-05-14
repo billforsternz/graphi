@@ -1,7 +1,9 @@
-#include <vector>
-#include <string>
+#ifndef SCALER_H_INCLUDED
+#define SCALER_H_INCLUDED
 
 void RedirectIOToConsole();
 void scaler_init();
-void scaler( double lo, double hi, int nbr_lines ); //, std::vector<std::string> &labels, std::vector<double> &values );
-void samples_draw(wxDC& pdc,wxWindow *canvas, wxFrame *frame );
+void samples_draw( wxDC& pdc,wxWindow *canvas, wxFrame *frame );
+bool collect( const char *s );
+
+#endif // SCALER_H_INCLUDED

@@ -5,11 +5,9 @@
 #include <wx/wx.h>
 #include <wx/dcbuffer.h>
 #include "scaler.h"
+#include "console.h"
 #include "uart.h"
 #include "conio.h"
-
-static std::vector<double> values;
-static std::vector<std::string> labels;
 
 // Should really be a little more sophisticated about this
 #define TIMER_ID 2001
@@ -36,39 +34,10 @@ private:
     void OnChar( wxKeyEvent &event );
     void OnTimeout(wxTimerEvent& event);
 
-    MyCanvas   *m_canvas;
-    wxTimer m_timer;
+    MyCanvas *m_canvas;
+    wxTimer   m_timer;
     wxDECLARE_EVENT_TABLE();
 };
-
-void MyFrame::OnIdle(wxIdleEvent& event)
-{
-    OnIdleCore();
-}
-
-void MyFrame::OnIdleCore()
-{
-    //printf("*");
-    char buf[1026];
-    if( uart.poll() )
-    {
-        int nbr = uart.read( buf, sizeof(buf)-2 );
-        for( int i=0; i<nbr; i++ )
-            _putch( buf[i] );
-    }
-    if( _kbhit() )
-    {
-        buf[ 0 ] = _getch();
-        uart.write( buf, 1 );
-    }
-}
-
-void MyFrame::OnChar(wxKeyEvent& event)
-{
-    // We never reach here for some reason - keep focus on console instead
-    long keycode = event.GetKeyCode();
-	printf( "OnChar() keycode=%lu\n", keycode );
-}
 
 
 // define a scrollable canvas for drawing onto
@@ -82,6 +51,50 @@ public:
     MyFrame *m_owner;
     wxDECLARE_EVENT_TABLE();
 };
+
+void MyFrame::OnIdle(wxIdleEvent& event)
+{
+    OnIdleCore();
+}
+
+void MyFrame::OnIdleCore()
+{
+    //printf("*");
+    char buf[1026];
+    unsigned int nbr_available = uart.poll();
+    bool new_data = false;
+    while( nbr_available > 0 )
+    {
+        unsigned int nbr_read = uart.read( buf, sizeof(buf)-2 );
+        buf[nbr_read] = '\0';
+        for( unsigned int i=0; i<nbr_read; i++ )
+        {
+            if( buf[i] == '\0' )
+                buf[i] = 0x7f;  // DEL character
+        }
+        _cputs(buf);
+        new_data = collect(buf);
+        nbr_available = uart.poll();
+    }
+    while( _kbhit() )
+    {
+        buf[0] = _getch();
+        uart.write( buf, 1 );
+    }
+    if( new_data )
+    {
+	    m_canvas->Update();
+	    m_canvas->Refresh();
+    }
+}
+
+void MyFrame::OnChar(wxKeyEvent& event)
+{
+    // We never reach here for some reason - keep focus on console instead
+    long keycode = event.GetKeyCode();
+	printf( "OnChar() keycode=%lu\n", keycode );
+}
+
 
 enum
 {
@@ -169,7 +182,7 @@ wxEND_EVENT_TABLE()
 
 MyCanvas::MyCanvas(MyFrame *parent)
         : wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                           wxHSCROLL | wxVSCROLL | wxNO_FULL_REPAINT_ON_RESIZE)
+                           wxHSCROLL | wxVSCROLL | wxFULL_REPAINT_ON_RESIZE)
 {
     m_owner = parent;
 }
