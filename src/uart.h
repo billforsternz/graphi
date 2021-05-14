@@ -20,8 +20,8 @@ private:
 public:
     ~Uart() { close(); }
     bool open( const char *port, int baud, int stop, char parity );  // eg "COM1", 115200, 1, 'N'
-    bool poll();
-    int  read( const char *buffer, unsigned int buf_size );
+    unsigned int poll();
+    unsigned int read( const char *buffer, unsigned int buf_size );
     bool write( const char *buffer, unsigned int buf_size );
     void close();
 };

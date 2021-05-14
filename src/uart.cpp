@@ -65,20 +65,18 @@ bool Uart::open( const char *port, int baud, int stop, char parity )
 }
 
 // Poll serial port, return bool characters available
-bool Uart::poll()
+unsigned int Uart::poll()
 {
     ClearCommError( handle, &errors, &status);
-    return status.cbInQue > 0;
+    return status.cbInQue;
 }
 
 // Reading bytes from serial port to buffer;
 // returns read bytes count, or if error occurs, returns 0
-int Uart::read( const char *buffer, unsigned int buf_size )
+unsigned int Uart::read( const char *buffer, unsigned int buf_size )
 {
     DWORD bytes_read = 0;
     unsigned int nbr_to_read = 0;
-
-    ClearCommError( handle, &errors, &status);
     if( status.cbInQue > 0 )
     {
         if( status.cbInQue > buf_size )
