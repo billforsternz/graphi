@@ -8,6 +8,9 @@
 #include "console.h"
 #include "uart.h"
 #include "conio.h"
+#include "OptionsDialog.h"
+#include "Repository.h"
+
 
 // Should really be a little more sophisticated about this
 #define TIMER_ID 2001
@@ -25,10 +28,12 @@ class MyFrame: public wxFrame
 {
 public:
     MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
+    Repository repository;
 private:
     void OnHello(wxCommandEvent& event);
     void OnExit(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
+    void OnOptions(wxCommandEvent& event);
     void OnIdle(wxIdleEvent& event);
     void OnIdleCore();
     void OnChar( wxKeyEvent &event );
@@ -98,7 +103,8 @@ void MyFrame::OnChar(wxKeyEvent& event)
 
 enum
 {
-    ID_Hello = 1
+    ID_Hello = 1,
+    ID_Options
 };
 
 
@@ -106,6 +112,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(ID_Hello,   MyFrame::OnHello)
     EVT_MENU(wxID_EXIT,  MyFrame::OnExit)
     EVT_MENU(wxID_ABOUT, MyFrame::OnAbout)
+    EVT_MENU(ID_Options, MyFrame::OnOptions)
     EVT_IDLE(MyFrame::OnIdle)
     EVT_TIMER( TIMER_ID, MyFrame::OnTimeout)
     EVT_CHAR( MyFrame::OnChar )
@@ -116,9 +123,12 @@ bool MyApp::OnInit()
     MyFrame *frame = new MyFrame( "Terminal with graph", wxPoint(50, 50), wxSize(800, 600) );
     frame->Show( true );
 	RedirectIOToConsole();
-    scaler_init();
-    bool ok = uart.open( "COM4", 115200, 1, 'N' );
-    printf( "uart.open() returns %s\n", ok?"ok":"fail");
+    scaler_init(frame->repository.options.m_y_min,frame->repository.options.m_y_max);
+    int com_port = frame->repository.options.m_com_port;
+    char buf[80];
+    sprintf( buf, "COM%d", com_port );
+    bool ok = uart.open( buf, 115200, 1, 'N' );
+    printf( "uart.open(COM%d) returns %s\n", com_port, ok?"ok":"fail");
     return true;
 }
 
@@ -132,9 +142,12 @@ MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
     menuFile->Append(wxID_EXIT);
     wxMenu *menuHelp = new wxMenu;
     menuHelp->Append(wxID_ABOUT);
+    wxMenu *menuOptions = new wxMenu;
+    menuOptions->Append(ID_Options, "Options", "Options" );
     wxMenuBar *menuBar = new wxMenuBar;
     menuBar->Append( menuFile, "&File" );
     menuBar->Append( menuHelp, "&Help" );
+    menuBar->Append( menuOptions, "&Options" );
     SetMenuBar( menuBar );
     CreateStatusBar();
     SetStatusText( "COM4 115K terminal plus graphing" );
@@ -157,12 +170,21 @@ void MyFrame::OnAbout(wxCommandEvent& event)
 {
 	m_canvas->Update();
 	m_canvas->Refresh();
-    wxMessageBox( "COM4 115K terminal plus graphing, work in progress",
-                  "COM4 115K terminal", wxOK | wxICON_INFORMATION );
+    wxMessageBox( "Serial 115K terminal plus graphing, work in progress",
+                  "Serial 115K terminal", wxOK | wxICON_INFORMATION );
 }
+void MyFrame::OnOptions(wxCommandEvent& event)
+{
+    OptionsDialog dialog( repository.options, this );
+    if( wxID_OK == dialog.ShowModal() )
+    {
+        repository.options = dialog.dat;
+    }
+}
+
 void MyFrame::OnHello(wxCommandEvent& event)
 {
-    wxLogMessage("COM4 115K terminal plus graphing, work in progress");
+    wxLogMessage("Serial 115K terminal plus graphing, work in progress");
 }
 
 

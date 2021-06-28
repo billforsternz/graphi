@@ -14,18 +14,18 @@ static std::deque<LINE> data;
 static std::vector<std::string> labels;
 static std::vector<double> values;
 
-#define LO -4
-#define HI +4
+static double LO;
+static double HI;
 #define NBR_HORIZ_LINES 40
 #define HORIGIN   50
 #define HINTERVAL 5
 #define MAX(a,b) ( (a)>(b) ? (a) : (b) )
 #define HSAMPLES(w) MAX( 0, (((w)-HORIGIN)/HINTERVAL) )
 
-void scaler_init()
+void scaler_init( double lo, double hi )
 {
-	double lo=LO;
-	double hi=HI;
+    LO = lo;
+    HI = hi;
 	int nbr_lines=NBR_HORIZ_LINES;
 	char buf[100];
     bool force_zero = (hi>0 && lo<0);
@@ -212,10 +212,11 @@ void samples_draw(wxDC& pdc, wxWindow *canvas, wxFrame *frame )
     for( int i = 0; i < labels.size(); i++ )
 	{
 		int y = Y(values[i]);
-        dc.DrawLine(50,y, w, y);
+        dc.DrawLine(50,y, w-50, y);
         wxSize sz2= dc.GetTextExtent(labels[i]);
 		dc.DrawText(labels[i],50-sz2.x-2,y-sz2.y/2);
-	}
+        dc.DrawText(labels[i],w-50,y-sz2.y/2);
+    }
 
 	// Draw channels
 	int nbr_samples1 = static_cast<int>(data.size());
@@ -229,7 +230,7 @@ void samples_draw(wxDC& pdc, wxWindow *canvas, wxFrame *frame )
 			case 2: dc.SetPen(*wxRED_PEN);   break;
 		}
 		int x1 = HORIGIN;
-		int nbr_samples2 = HSAMPLES(w);
+		int nbr_samples2 = HSAMPLES(w-50);
 		for( int i=1; i<nbr_samples1 && i<nbr_samples2; i++ )
 		{
 			LINE *p = &data[i];

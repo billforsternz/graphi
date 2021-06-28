@@ -2,7 +2,7 @@
 #define SCALER_H_INCLUDED
 
 void RedirectIOToConsole();
-void scaler_init();
+void scaler_init( double lo, double hi );
 void samples_draw( wxDC& pdc,wxWindow *canvas, wxFrame *frame );
 bool collect( const char *s );
 
