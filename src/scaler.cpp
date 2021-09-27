@@ -18,7 +18,7 @@ static std::vector<double> values;
 static double LO;
 static double HI;
 #define NBR_HORIZ_LINES 40
-#define HORIGIN   50
+#define HORIGIN   40
 #define HINTERVAL 1
 #define MAX(a,b) ( (a)>(b) ? (a) : (b) )
 #define HSAMPLES(w) MAX( 0, (((w)-HORIGIN)/HINTERVAL) )
@@ -219,32 +219,32 @@ void samples_draw(wxDC& pdc, wxWindow *canvas, wxFrame *frame )
     for( int i = 0; i < labels.size(); i++ )
 	{
 		int y = Y(values[i]);
-        dc.DrawLine(50,y, w-50, y);
+        dc.DrawLine(HORIGIN,y, w-HORIGIN, y);
         wxSize sz2= dc.GetTextExtent(labels[i]);
-		dc.DrawText(labels[i],50-sz2.x-2,y-sz2.y/2);
-        dc.DrawText(labels[i],w-50,y-sz2.y/2);
+		dc.DrawText(labels[i],HORIGIN-sz2.x-2,y-sz2.y/2);
+        dc.DrawText(labels[i],w-HORIGIN,y-sz2.y/2);
     }
 
     // Vertical horizontal frame
-    dc.SetPen(*wxLIGHT_GREY_PEN);
-    for( int x = 50; x <= w-50; x+=50 )
+    #define HDIVISION 40
+    for( int x = HDIVISION; x <= w-HDIVISION; x+=HDIVISION )
     {
         int y1 = Y(LO);
         int y2 = Y(HI);
         dc.DrawLine(x,y1, x, y2);
         char buf[40];
-        sprintf( buf, "%.1fms", (x-50)/50*1.6 );
+        sprintf( buf, "%.fms", (x-HDIVISION)/HDIVISION*1.0 );
         std::string label(buf);
         wxSize sz3= dc.GetTextExtent(label);
         dc.DrawText(label,x-sz3.x/2,y1);
-        sprintf( buf, "%.3fm", (x-50)/50*0.2744 );
+        sprintf( buf, "%.2fm", (x-HDIVISION)/HDIVISION*0.1715 );
         std::string label2(buf);
         dc.DrawText(label2,x-sz3.x/2,y2-sz3.y);
     }
 
     // Draw channels
 	int nbr_samples1 = static_cast<int>(data.size());
-	for( int channel=0; channel<3; channel++ )
+	for( int channel=0; channel<1; channel++ )
 	{
 		switch(channel)
 		{
@@ -253,28 +253,28 @@ void samples_draw(wxDC& pdc, wxWindow *canvas, wxFrame *frame )
 			case 1: dc.SetPen(*wxBLUE_PEN);  break;
 			case 2: dc.SetPen(*wxRED_PEN);   break;
 		}
-        int accum = 0;
-		int nbr_samples2 = HSAMPLES(w-50);
-		for( int i=1; i<nbr_samples1 && i<nbr_samples2; i++ )
+		int nbr_samples2 = HSAMPLES(w-HORIGIN);
+        for( int i=1; i<nbr_samples1 && i<nbr_samples2; i++ )
 		{
 			LINE *p = &data[i];
             LINE *q = &data[i-1];
-            if( channel >= p->nbr_channels  )
+            if( channel >= p->nbr_channels || channel >= q->nbr_channels   )
 				break;
-            long delta = p->time - q->time;
+            /* long delta = p->time - q->time;
             if( delta<1 )
             {
                 delta = 1;
                 p->time = q->time + delta;
+                adjusted = true;
             }
             else if( delta > 16 )
             {
                 delta = 16;
                 p->time = q->time + delta;
-            }
-            int x1 = HORIGIN + (accum/2)*HINTERVAL;
-            accum += delta;
-            int x2 = HORIGIN + (accum/2)*HINTERVAL;
+                adjusted = true;
+            }  */
+            int x1 = HORIGIN + (q->time * 16 * HDIVISION) / 1000;  // HDIVISION pixels = 1ms = 1000/16 ticks for 16uS ticks
+            int x2 = HORIGIN + (p->time *16*HDIVISION) / 1000;
 			double y2 = p->samples[channel];
 			if( LO<=y2 && y2<=HI )
 			{
@@ -305,25 +305,24 @@ void samples_clear(wxDC& pdc, wxWindow *canvas, wxFrame *frame )
     for( int i = 0; i < labels.size(); i++ )
     {
         int y = Y(values[i]);
-        dc.DrawLine(50,y, w-50, y);
+        dc.DrawLine(HORIGIN,y, w-HORIGIN, y);
         wxSize sz2= dc.GetTextExtent(labels[i]);
-        dc.DrawText(labels[i],50-sz2.x-2,y-sz2.y/2);
-        dc.DrawText(labels[i],w-50,y-sz2.y/2);
+        dc.DrawText(labels[i],HORIGIN-sz2.x-2,y-sz2.y/2);
+        dc.DrawText(labels[i],w-HORIGIN,y-sz2.y/2);
     }
 
     // Vertical horizontal frame
-    dc.SetPen(*wxLIGHT_GREY_PEN);
-    for( int x = 50; x <= w-50; x+=50 )
+    for( int x = HDIVISION; x <= w-HDIVISION; x+=HDIVISION )
     {
         int y1 = Y(LO);
         int y2 = Y(HI);
         dc.DrawLine(x,y1, x, y2);
         char buf[40];
-        sprintf( buf, "%.1fms", (x-50)/50*0.8 );
+        sprintf( buf, "%.fms", (x-HDIVISION)/HDIVISION*1.0 );
         std::string label(buf);
         wxSize sz3= dc.GetTextExtent(label);
         dc.DrawText(label,x-sz3.x/2,y1);
-        sprintf( buf, "%.3fm", (x-50)/50*0.1372 );
+        sprintf( buf, "%.2fm", (x-HDIVISION)/HDIVISION*0.1715 );
         std::string label2(buf);
         dc.DrawText(label2,x-sz3.x/2,y2-sz3.y);
     }
