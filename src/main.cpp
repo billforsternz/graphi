@@ -11,6 +11,8 @@
 #include "OptionsDialog.h"
 #include "Repository.h"
 
+//#define TEMPERATURE_HACK
+static bool clear_request=false;
 
 // Should really be a little more sophisticated about this
 #define TIMER_ID 2001
@@ -72,19 +74,35 @@ void MyFrame::OnIdleCore()
     {
         unsigned int nbr_read = uart.read( buf, sizeof(buf)-2 );
         buf[nbr_read] = '\0';
+#ifdef TEMPERATURE_HACK
+        if(nbr_read == 1 )
+        {
+            char buf2[100];
+            sprintf(buf2,"character read = %d, temperature = %d degrees C\r\n", buf[0], buf[0]+72 );
+            _cputs(buf2);
+        }
+#else
         for( unsigned int i=0; i<nbr_read; i++ )
         {
             if( buf[i] == '\0' )
                 buf[i] = 0x7f;  // DEL character
         }
         _cputs(buf);
-        new_data = collect(buf);
+#endif
+        new_data |= collect(buf);
         nbr_available = uart.poll();
     }
     while( _kbhit() )
     {
         buf[0] = _getch();
-        uart.write( buf, 1 );
+        if( buf[0] == '\x1b' ) // ESC ?
+        {
+            clear_request = true;
+            m_canvas->Update();
+            m_canvas->Refresh();
+        }
+        else
+            uart.write( buf, 1 );
     }
     if( new_data )
     {
@@ -127,7 +145,11 @@ bool MyApp::OnInit()
     int com_port = frame->repository.options.m_com_port;
     char buf[80];
     sprintf( buf, "COM%d", com_port );
+#ifdef TEMPERATURE_HACK
+    bool ok = uart.open( buf, 9600, 1, 'N' );
+#else
     bool ok = uart.open( buf, 115200, 1, 'N' );
+#endif
     printf( "uart.open(COM%d) returns %s\n", com_port, ok?"ok":"fail");
     return true;
 }
@@ -150,8 +172,12 @@ MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
     menuBar->Append( menuOptions, "&Options" );
     SetMenuBar( menuBar );
     CreateStatusBar();
+#ifdef TEMPERATURE_HACK
+    SetStatusText( "COM4 9600 terminal plus graphing" );
+#else
     SetStatusText( "COM4 115K terminal plus graphing" );
-	m_canvas = new MyCanvas( this );
+#endif
+    m_canvas = new MyCanvas( this );
     m_timer.SetOwner(this,TIMER_ID);
     m_timer.Start( 100, true );
 }
@@ -170,8 +196,13 @@ void MyFrame::OnAbout(wxCommandEvent& event)
 {
 	m_canvas->Update();
 	m_canvas->Refresh();
+#ifdef TEMPERATURE_HACK
+    wxMessageBox( "Serial 9600 terminal plus graphing, work in progress",
+                  "Serial 9600 terminal", wxOK | wxICON_INFORMATION );
+#else
     wxMessageBox( "Serial 115K terminal plus graphing, work in progress",
                   "Serial 115K terminal", wxOK | wxICON_INFORMATION );
+#endif
 }
 void MyFrame::OnOptions(wxCommandEvent& event)
 {
@@ -184,7 +215,11 @@ void MyFrame::OnOptions(wxCommandEvent& event)
 
 void MyFrame::OnHello(wxCommandEvent& event)
 {
+#ifdef TEMPERATURE_HACK
+    wxLogMessage( "Serial 9600 terminal plus graphing, work in progress" );
+#else
     wxLogMessage("Serial 115K terminal plus graphing, work in progress");
+#endif
 }
 
 
@@ -227,6 +262,11 @@ void MyCanvas::OnPaint(wxPaintEvent &WXUNUSED(event))
 
 void MyCanvas::Draw(wxDC& pdc)
 {
-    samples_draw(pdc,this,m_owner);
+    if( clear_request ) {
+        clear_request = false;
+        samples_clear( pdc, this, m_owner );
+    }
+    else
+        samples_draw( pdc, this, m_owner );
 }
 
